@@ -133,3 +133,21 @@ function animate(nowMs) {
 ```
 
 This pattern gives users smooth interaction while moving the camera and a stable, low-noise path-traced image once input stops.
+
+## References / Citations
+
+### Three.js docs
+- **Three.js Documentation (manual + API)** — https://threejs.org/docs/
+  - Relevance: canonical API source for renderer setup, loaders, and PMREM usage.
+- **RGBELoader (examples JSM docs/source)** — https://github.com/mrdoob/three.js/blob/dev/examples/jsm/loaders/RGBELoader.js
+  - Relevance: import path and HDR loading behavior used in the environment-map section.
+
+### Path tracer repo
+- **three-gpu-pathtracer (GitHub repository)** — https://github.com/gkjohnson/three-gpu-pathtracer
+  - Relevance: path tracer API reference for `PathTracingRenderer`, `PhysicalPathTracingMaterial`, and `PathTracingSceneGenerator`.
+- **three-mesh-bvh (GitHub repository)** — https://github.com/gkjohnson/three-mesh-bvh
+  - Relevance: BVH acceleration hooks (`computeBoundsTree`, `disposeBoundsTree`, `acceleratedRaycast`) used before scene generation.
+
+### F1 design analysis
+- **The Race — How Red Bull got the RB18's sidepods so right** — https://www.the-race.com/formula-1/how-red-bull-got-the-rb18s-sidepods-so-right/
+  - Relevance: used for RB18 sidepod design context when shaping the car body proportions.
