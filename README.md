@@ -76,3 +76,60 @@ To avoid API drift between examples and runtime behavior, keep these versions pi
 - `three@0.160.0`
 - `three-gpu-pathtracer@0.0.17`
 - `three-mesh-bvh@0.7.6`
+
+## Recommended interaction workflow (raster + path tracing)
+
+For responsive camera controls and clean final convergence, run in two modes:
+
+- **Interactive mode (raster)** while OrbitControls is active (`start` / `change`):
+  keep camera movement and wheel animation enabled, and render with rasterization.
+- **Converge mode (path tracing)** after interaction ends (`end` + short settle delay):
+  freeze or heavily damp wheel animation, switch back to path tracing, and accumulate samples.
+
+```js
+let usePathTracing = true;
+let isUserInteracting = false;
+let lastInteractionTime = 0;
+
+const INTERACTION_SETTLE_MS = 200;
+
+controls.addEventListener('start', () => {
+  isUserInteracting = true;
+  usePathTracing = false;      // fallback to raster during active movement
+  pathTracingRenderer.reset(); // reset accumulation when camera changes
+});
+
+controls.addEventListener('change', () => {
+  lastInteractionTime = performance.now();
+  pathTracingRenderer.reset();
+});
+
+controls.addEventListener('end', () => {
+  isUserInteracting = false;
+  lastInteractionTime = performance.now();
+});
+
+function animate(nowMs) {
+  requestAnimationFrame(animate);
+
+  const shouldConverge =
+    !isUserInteracting &&
+    nowMs - lastInteractionTime > INTERACTION_SETTLE_MS;
+
+  if (shouldConverge && !usePathTracing) {
+    usePathTracing = true;
+    pathTracingRenderer.reset();
+  }
+
+  const wheelSpinFactor = usePathTracing ? 0.02 : 1.0;
+  // ... wheel rotation *= wheelSpinFactor
+
+  if (usePathTracing) {
+    pathTracingRenderer.update();
+  } else {
+    renderer.render(scene, camera);
+  }
+}
+```
+
+This pattern gives users smooth interaction while moving the camera and a stable, low-noise path-traced image once input stops.
