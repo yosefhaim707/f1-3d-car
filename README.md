@@ -1,32 +1,56 @@
 # f1-3d-car
 
-## Setup
+## Setup (ES modules, recommended)
 
-Choose one build style and include `RGBELoader` accordingly.
+Use one ES module-based integration path so `three`, `three-gpu-pathtracer`, and `three-mesh-bvh` stay API-compatible.
 
-### Option A: Script tags (non-module)
-
-Make sure the loader script is included **before** `main.js`:
-
-```html
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.160.0/examples/js/loaders/RGBELoader.js"></script>
-<script src="./main.js"></script>
+```bash
+npm install three@0.160.0 three-gpu-pathtracer@0.0.17 three-mesh-bvh@0.7.6
 ```
 
-### Option B: ES modules
-
-Import `RGBELoader` from examples/addons (path depends on Three.js version):
+Import classes directly from `three-gpu-pathtracer` (instead of `THREE.PathTracingRenderer` / `THREE.PhysicalPathTracingMaterial`) and initialize `three-mesh-bvh` prototype hooks before generating path tracing data:
 
 ```js
 import * as THREE from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
-// or: import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import {
+  PathTracingRenderer,
+  PhysicalPathTracingMaterial,
+  PathTracingSceneGenerator,
+} from 'three-gpu-pathtracer';
+import {
+  acceleratedRaycast,
+  computeBoundsTree,
+  disposeBoundsTree,
+} from 'three-mesh-bvh';
+
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+```
+
+## Path tracer initialization
+
+Use imported classes directly:
+
+```js
+const pathTracingRenderer = new PathTracingRenderer(renderer);
+const pathTracingMaterial = new PhysicalPathTracingMaterial();
+const sceneGenerator = new PathTracingSceneGenerator();
+
+const { bvh, textures, materials, lights } = sceneGenerator.generate(scene);
+
+pathTracingMaterial.bvh.updateFrom(bvh);
+pathTracingMaterial.textures.setTextures(renderer, 2048, 2048, textures);
+pathTracingMaterial.materials.updateFrom(materials, textures);
+pathTracingMaterial.lights.updateFrom(lights);
+
+pathTracingRenderer.material = pathTracingMaterial;
 ```
 
 ## HDR environment + PMREM
 
-Keep the PMREM pipeline unchanged and instantiate the loader using the imported symbol in module builds:
+Keep the PMREM pipeline unchanged and instantiate `RGBELoader` from the ES module import:
 
 ```js
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -45,4 +69,10 @@ new RGBELoader()
   });
 ```
 
-> If you are using non-module script tags, use `new THREE.RGBELoader()` in that variant.
+## Compatibility note
+
+To avoid API drift between examples and runtime behavior, keep these versions pinned together:
+
+- `three@0.160.0`
+- `three-gpu-pathtracer@0.0.17`
+- `three-mesh-bvh@0.7.6`
